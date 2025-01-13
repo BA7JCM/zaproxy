@@ -37,6 +37,8 @@ import org.zaproxy.zap.utils.Stats;
  *
  * @since 2.12.0
  */
+@SuppressWarnings("removal")
+@Deprecated(forRemoval = true, since = "2.16.0")
 public class PassiveScanTask implements Runnable {
 
     /** I think this should be a thread which runs just one scan rule against one history record */
@@ -44,7 +46,6 @@ public class PassiveScanTask implements Runnable {
 
     private PassiveScanTaskHelper helper;
 
-    @SuppressWarnings("deprecation")
     private PassiveScanThread psThread;
 
     private int maxBodySize;
@@ -54,9 +55,8 @@ public class PassiveScanTask implements Runnable {
     private long startTime;
     private long stopTime;
 
-    private static final Logger logger = LogManager.getLogger(PassiveScanTask.class);
+    private static final Logger LOGGER = LogManager.getLogger(PassiveScanTask.class);
 
-    @SuppressWarnings("deprecation")
     public PassiveScanTask(HistoryReference hr, PassiveScanTaskHelper helper) {
         this.href = hr;
         this.helper = helper;
@@ -106,7 +106,7 @@ public class PassiveScanTask implements Runnable {
             Source src = new Source(msg.getResponseBody().toString());
             PassiveScanData passiveScanData = new PassiveScanData(msg);
 
-            for (PassiveScanner scanner : helper.getPassiveScannerList().list()) {
+            for (PassiveScanner scanner : helper.getPassiveScanRuleManager().getScanRules()) {
                 currentScanner = scanner;
                 try {
                     if (shutdown) {
@@ -119,16 +119,14 @@ public class PassiveScanTask implements Runnable {
                                             .contains(hrefHistoryType))) {
 
                         if (scanner instanceof PluginPassiveScanner) {
-                            PluginPassiveScanner pps = (PluginPassiveScanner) scanner;
-                            PluginPassiveScanner pps2 = pps.copy();
-                            pps2.init(psThread, msg, passiveScanData);
-                            scanner = pps2;
-                        } else {
-                            scanner.setParent(psThread);
+                            PluginPassiveScanner pps = ((PluginPassiveScanner) scanner).copy();
+                            pps.setHelper(passiveScanData);
+                            scanner = pps;
                         }
+                        scanner.setParent(psThread);
                         scanner.setTaskHelper(helper);
 
-                        logger.debug(
+                        LOGGER.debug(
                                 "Running scan rule, URL {} plugin {}",
                                 msg.getRequestHeader().getURI(),
                                 scanner.getName());
@@ -139,7 +137,7 @@ public class PassiveScanTask implements Runnable {
                             scanned = true;
                         } else {
                             Stats.incCounter("stats.pscan.reqBodyTooBig");
-                            logger.debug(
+                            LOGGER.debug(
                                     "Request to {} body size {} larger than max configured {}",
                                     msg.getRequestHeader().getURI(),
                                     msg.getRequestBody().length(),
@@ -151,7 +149,7 @@ public class PassiveScanTask implements Runnable {
                                 scanned = true;
                             } else {
                                 Stats.incCounter("stats.pscan.respBodyTooBig");
-                                logger.debug(
+                                LOGGER.debug(
                                         "Response from {} body size {} larger than max configured {}",
                                         msg.getRequestHeader().getURI(),
                                         msg.getResponseBody().length(),
@@ -177,7 +175,7 @@ public class PassiveScanTask implements Runnable {
                                                     + " "
                                                     + msg.getResponseBody().length();
                                 }
-                                logger.warn(
+                                LOGGER.warn(
                                         "Passive Scan rule {} took {} seconds to scan {} {}",
                                         scanner.getName(),
                                         timeTaken / 1000,
@@ -187,7 +185,7 @@ public class PassiveScanTask implements Runnable {
                         }
                     }
                 } catch (Exception e) {
-                    logger.error(
+                    LOGGER.error(
                             "Scan rule '{}' failed on record {} from History table: {} {}",
                             scanner.getName(),
                             href.getHistoryId(),
@@ -199,7 +197,7 @@ public class PassiveScanTask implements Runnable {
 
         } catch (Exception e) {
             if (HistoryReference.getTemporaryTypes().contains(href.getHistoryType())) {
-                logger.debug("Temporary record {} no longer available:", href.getHistoryId(), e);
+                LOGGER.debug("Temporary record {} no longer available:", href.getHistoryId(), e);
             } else {
                 RecordHistory rec = null;
                 try {
@@ -210,12 +208,12 @@ public class PassiveScanTask implements Runnable {
                 if (rec == null) {
                     return;
                 }
-                logger.error(
+                LOGGER.error(
                         "Parser failed on record {} from History table", href.getHistoryId(), e);
                 HttpMessage msg;
                 try {
                     msg = href.getHttpMessage();
-                    logger.error("Req Header {}", msg.getRequestHeader(), e);
+                    LOGGER.error("Req Header {}", msg.getRequestHeader(), e);
                 } catch (Exception e1) {
                     // Ignore
                 }

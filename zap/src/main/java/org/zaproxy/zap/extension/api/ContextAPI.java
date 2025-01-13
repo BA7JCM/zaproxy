@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import net.sf.json.JSONArray;
@@ -57,7 +58,7 @@ import org.zaproxy.zap.utils.XMLStringUtil;
 
 public class ContextAPI extends ApiImplementor {
 
-    private static final Logger log = LogManager.getLogger(ContextAPI.class);
+    private static final Logger LOGGER = LogManager.getLogger(ContextAPI.class);
 
     private static final String PREFIX = "context";
     private static final String TECH_NAME = "technologyName";
@@ -159,7 +160,7 @@ public class ContextAPI extends ApiImplementor {
 
     @Override
     public ApiResponse handleApiAction(String name, JSONObject params) throws ApiException {
-        log.debug("handleApiAction {} {}", name, params);
+        LOGGER.debug("handleApiAction {} {}", name, params);
 
         Context context;
         TechSet techSet;
@@ -285,7 +286,7 @@ public class ContextAPI extends ApiImplementor {
                     } catch (IllegalContextNameException e) {
                         throw new ApiException(ApiException.Type.BAD_EXTERNAL_DATA, e);
                     } catch (Exception e) {
-                        log.error(e.getMessage(), e);
+                        LOGGER.error(e.getMessage(), e);
                         throw new ApiException(ApiException.Type.INTERNAL_ERROR, e.getMessage());
                     }
                 }
@@ -314,9 +315,7 @@ public class ContextAPI extends ApiImplementor {
                 context = getContext(params);
                 techSet = context.getTechSet();
                 techNames = getParam(params, PARAM_TECH_NAMES, "").split(",");
-                for (String techName : techNames) {
-                    techSet.include(getTech(techName));
-                }
+                handleTechs(techNames, techSet::includeAll);
                 context.save();
                 break;
             case ACTION_INCLUDE_ALL_TECHS:
@@ -329,9 +328,7 @@ public class ContextAPI extends ApiImplementor {
                 context = getContext(params);
                 techSet = context.getTechSet();
                 techNames = getParam(params, PARAM_TECH_NAMES, "").split(",");
-                for (String techName : techNames) {
-                    techSet.exclude(getTech(techName));
-                }
+                handleTechs(techNames, techSet::excludeAll);
                 context.save();
                 break;
             case ACTION_EXCLUDE_ALL_TECHS:
@@ -347,6 +344,13 @@ public class ContextAPI extends ApiImplementor {
         }
 
         return ApiResponseElement.OK;
+    }
+
+    private void handleTechs(String[] techNames, Consumer<Tech> handler) throws ApiException {
+        for (String techName : techNames) {
+            Tech tech = getTech(techName);
+            handler.accept(tech);
+        }
     }
 
     private void addExcludeToContext(Context context, String regex) {
@@ -368,7 +372,7 @@ public class ContextAPI extends ApiImplementor {
 
     @Override
     public ApiResponse handleApiView(String name, JSONObject params) throws ApiException {
-        log.debug("handleApiView {} {}", name, params);
+        LOGGER.debug("handleApiView {} {}", name, params);
 
         ApiResponse result;
         ApiResponseList resultList;
@@ -495,7 +499,7 @@ public class ContextAPI extends ApiImplementor {
             if (AuthCheckingStrategy.POLL_URL.equals(strategy)) {
                 fields.put(PARAM_POLL_URL, authenticationMethod.getPollUrl());
                 fields.put(PARAM_POLL_DATA, authenticationMethod.getPollData());
-                fields.put(PARAM_POLL_HEADERS, authenticationMethod.getPollData());
+                fields.put(PARAM_POLL_HEADERS, authenticationMethod.getPollHeaders());
                 fields.put(
                         PARAM_POLL_FREQ, Integer.toString(authenticationMethod.getPollFrequency()));
                 AuthPollFrequencyUnits units = authenticationMethod.getPollFrequencyUnits();

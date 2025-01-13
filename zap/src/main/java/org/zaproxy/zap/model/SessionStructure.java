@@ -48,10 +48,10 @@ public class SessionStructure {
     public static final String DATA_DRIVEN_NODE_PREFIX = "\u00AB";
     public static final String DATA_DRIVEN_NODE_POSTFIX = "\u00BB";
     public static final String DATA_DRIVEN_NODE_REGEX = "(.+?)";
-    private static final String MULTIPART_FORM_DATA = "multipart/form-data";
-    private static final String MULTIPART_FORM_DATA_DISPLAY = "(" + MULTIPART_FORM_DATA + ")";
+    private static final String MULTIPART_FORM_DATA_DISPLAY =
+            "(" + HttpHeader.FORM_MULTIPART_CONTENT_TYPE + ")";
 
-    private static final Logger log = LogManager.getLogger(SessionStructure.class);
+    private static final Logger LOGGER = LogManager.getLogger(SessionStructure.class);
 
     /**
      * Adds the message to the Sites tree
@@ -60,7 +60,7 @@ public class SessionStructure {
      * @param ref the history reference
      * @param msg the message
      * @return the node added to the Sites Tree
-     * @depreciated Use {@link #addPath(Model, HistoryReference, HttpMessage)}
+     * @deprecated Use {@link #addPath(Model, HistoryReference, HttpMessage)}
      */
     @Deprecated
     public static StructuralNode addPath(Session session, HistoryReference ref, HttpMessage msg) {
@@ -89,7 +89,7 @@ public class SessionStructure {
      * @param newOnly Only return a SiteNode if one was newly created
      * @return the SiteNode that corresponds to the HttpMessage, or null if newOnly and the node
      *     already exists
-     * @depreciated Use {@link #addPath(Model, HistoryReference, HttpMessage, boolean)}
+     * @deprecated Use {@link #addPath(Model, HistoryReference, HttpMessage, boolean)}
      */
     @Deprecated
     public static StructuralNode addPath(
@@ -131,7 +131,7 @@ public class SessionStructure {
                     return null;
                 }
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                LOGGER.error(e.getMessage(), e);
                 return null;
             }
         }
@@ -150,7 +150,7 @@ public class SessionStructure {
                     return path;
                 }
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                LOGGER.error(e.getMessage(), e);
             }
         }
         URI uri = msg.getRequestHeader().getURI();
@@ -199,7 +199,7 @@ public class SessionStructure {
      * @return the site node or null if not found
      * @throws DatabaseException
      * @throws URIException
-     * @depreciated Use {@link #find(Model, URI, String, String)}
+     * @deprecated Use {@link #find(Model, URI, String, String)}
      */
     @Deprecated
     public static StructuralNode find(long sessionId, URI uri, String method, String postData)
@@ -290,7 +290,7 @@ public class SessionStructure {
      * @param msg the message
      * @return the node name
      * @throws URIException
-     * @depreciated Use {@link #getNodeName(Model, HttpMessage)}
+     * @deprecated Use {@link #getNodeName(Model, HttpMessage)}
      */
     @Deprecated
     public static String getNodeName(HttpMessage msg) throws URIException {
@@ -324,7 +324,7 @@ public class SessionStructure {
                     return name;
                 }
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                LOGGER.error(e.getMessage(), e);
             }
         }
 
@@ -389,7 +389,8 @@ public class SessionStructure {
                             true));
 
             String contentType = message.getRequestHeader().getHeader(HttpHeader.CONTENT_TYPE);
-            if (contentType != null && contentType.startsWith(MULTIPART_FORM_DATA)) {
+            if (contentType != null
+                    && contentType.startsWith(HttpHeader.FORM_MULTIPART_CONTENT_TYPE)) {
                 sb.append(MULTIPART_FORM_DATA_DISPLAY);
             } else {
                 sb.append(
@@ -642,7 +643,7 @@ public class SessionStructure {
 
             return newMsg;
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
         return null;
     }
@@ -700,7 +701,7 @@ public class SessionStructure {
      * Returns the root node
      *
      * @return the root node
-     * @depreciated Use {@link #getRootNode(Model)}
+     * @deprecated Use {@link #getRootNode(Model)}
      */
     @Deprecated
     public static StructuralNode getRootNode() {
@@ -729,7 +730,7 @@ public class SessionStructure {
                 return new StructuralTableNode(rs);
             }
         } catch (DatabaseException e) {
-            log.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
         return null;
     }
@@ -750,7 +751,7 @@ public class SessionStructure {
             return leafParams;
         }
 
-        if (contentType.startsWith(MULTIPART_FORM_DATA)) {
+        if (contentType.startsWith(HttpHeader.FORM_MULTIPART_CONTENT_TYPE)) {
             leafParams += MULTIPART_FORM_DATA_DISPLAY;
         } else if (contentType.startsWith("application/x-www-form-urlencoded")) {
             leafParams += getQueryParamString(session.getFormParameters(uri, requestBody), false);

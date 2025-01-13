@@ -33,7 +33,6 @@ import org.parosproxy.paros.model.HistoryReference;
 import org.parosproxy.paros.model.Session;
 import org.parosproxy.paros.network.HttpMalformedHeaderException;
 import org.parosproxy.paros.network.HttpMessage;
-import org.parosproxy.paros.view.View;
 import org.zaproxy.zap.extension.alert.ExtensionAlert;
 import org.zaproxy.zap.utils.Stats;
 import org.zaproxy.zap.view.ScanStatus;
@@ -43,15 +42,15 @@ import org.zaproxy.zap.view.ScanStatus;
  *
  * @since 2.12.0
  */
+@SuppressWarnings("removal")
+@Deprecated(forRemoval = true, since = "2.16.0")
 public class PassiveScanController extends Thread implements ProxyListener {
 
-    private static final Logger logger = LogManager.getLogger(PassiveScanController.class);
+    private static final Logger LOGGER = LogManager.getLogger(PassiveScanController.class);
 
     private ExtensionHistory extHist;
-    private PassiveScanParam pscanOptions;
     private PassiveScanTaskHelper helper;
     private Session session;
-    private ScanStatus scanStatus;
 
     private ThreadPoolExecutor executor;
 
@@ -69,10 +68,8 @@ public class PassiveScanController extends Thread implements ProxyListener {
             ScanStatus scanStatus) {
         setName("ZAP-PassiveScanController");
         this.extHist = extHistory;
-        this.pscanOptions = passiveScanParam;
-        this.scanStatus = scanStatus;
 
-        helper = new PassiveScanTaskHelper(extPscan, extAlert, passiveScanParam);
+        helper = new PassiveScanTaskHelper(extPscan, extAlert, null);
 
         // Get the last id - in case we've just opened an existing session
         currentId = this.getLastHistoryId();
@@ -85,11 +82,11 @@ public class PassiveScanController extends Thread implements ProxyListener {
 
     @Override
     public void run() {
-        logger.debug("Starting passive scan monitoring");
+        LOGGER.debug("Starting passive scan monitoring");
         try {
             scan();
         } finally {
-            logger.debug("Stopping passive scan monitoring");
+            LOGGER.debug("Stopping passive scan monitoring");
         }
     }
 
@@ -110,7 +107,6 @@ public class PassiveScanController extends Thread implements ProxyListener {
                         if (shutDown) {
                             return;
                         }
-                        lastId = this.getLastHistoryId();
                     } catch (InterruptedException e) {
                         // New URL, but give it a chance to be processed first
                         try {
@@ -119,6 +115,7 @@ public class PassiveScanController extends Thread implements ProxyListener {
                             // Ignore
                         }
                     }
+                    lastId = this.getLastHistoryId();
                 }
                 href = getHistoryReference(currentId);
 
@@ -127,8 +124,9 @@ public class PassiveScanController extends Thread implements ProxyListener {
                 }
 
                 if (href != null
-                        && (!pscanOptions.isScanOnlyInScope() || session.isInScope(href))) {
-                    logger.debug(
+                        && (!getPassiveScanParam().isScanOnlyInScope()
+                                || session.isInScope(href))) {
+                    LOGGER.debug(
                             "Submitting request to executor: {} id {} type {}",
                             href.getURI(),
                             currentId,
@@ -137,9 +135,6 @@ public class PassiveScanController extends Thread implements ProxyListener {
                 }
                 int recordsToScan = this.getRecordsToScan();
                 Stats.setHighwaterMark("stats.pscan.recordsToScan", recordsToScan);
-                if (View.isInitialised()) {
-                    scanStatus.setScanCount(recordsToScan);
-                }
 
             } catch (Exception e) {
                 if (shutDown) {
@@ -147,18 +142,22 @@ public class PassiveScanController extends Thread implements ProxyListener {
                 }
                 if (href != null
                         && HistoryReference.getTemporaryTypes().contains(href.getHistoryType())) {
-                    logger.debug("Temporary record {} no longer available:", currentId, e);
+                    LOGGER.debug("Temporary record {} no longer available:", currentId, e);
                 } else {
-                    logger.error("Failed on record {} from History table", currentId, e);
+                    LOGGER.error("Failed on record {} from History table", currentId, e);
                 }
             }
         }
     }
 
+    private PassiveScanParam getPassiveScanParam() {
+        return extHist.getModel().getOptionsParam().getParamSet(PassiveScanParam.class);
+    }
+
     private ThreadPoolExecutor getExecutor() {
         if (this.executor == null || this.executor.isShutdown()) {
-            int threads = pscanOptions.getPassiveScanThreads();
-            logger.debug("Creating new executor with {} threads", threads);
+            int threads = getPassiveScanParam().getPassiveScanThreads();
+            LOGGER.debug("Creating new executor with {} threads", threads);
 
             this.executor =
                     (ThreadPoolExecutor)
@@ -196,7 +195,7 @@ public class PassiveScanController extends Thread implements ProxyListener {
     }
 
     protected void shutdown() {
-        logger.debug("Shutdown");
+        LOGGER.debug("Shutdown");
         this.shutDown = true;
         if (this.executor != null) {
             this.executor.shutdown();

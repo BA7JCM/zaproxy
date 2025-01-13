@@ -40,12 +40,15 @@ import org.zaproxy.zap.extension.script.ScriptsCache.CachedScript;
 import org.zaproxy.zap.extension.script.ScriptsCache.Configuration;
 import org.zaproxy.zap.extension.script.ScriptsCache.InterfaceProvider;
 
+@Deprecated(since = "2.15.0", forRemoval = true)
+@SuppressWarnings("removal")
 public class ScriptsActiveScanner extends AbstractAppParamPlugin {
 
     private ExtensionScript extension = null;
     private ScriptsCache<ActiveScript> cachedScripts;
 
-    private static Logger logger = LogManager.getLogger(ScriptsActiveScanner.class);
+    private static final Logger LOGGER = LogManager.getLogger(ScriptsActiveScanner.class);
+
     /**
      * A {@code Set} containing the scripts that do not implement {@code ActiveScript2}, to show an
      * error if those scripts do not implement {@code ActiveScript} (thus not implementing any of
@@ -159,7 +162,7 @@ public class ScriptsActiveScanner extends AbstractAppParamPlugin {
 
                     if (s != null) {
                         HttpMessage msg = this.getNewMsg();
-                        logger.debug(
+                        LOGGER.debug(
                                 "Calling script {} scanNode for {}",
                                 script.getName(),
                                 msg.getRequestHeader().getURI());
@@ -214,7 +217,7 @@ public class ScriptsActiveScanner extends AbstractAppParamPlugin {
 
             ScriptWrapper script = cachedScript.getScriptWrapper();
             try {
-                logger.debug(
+                LOGGER.debug(
                         "Calling script {} scan for {} param={} value={}",
                         script.getName(),
                         msg.getRequestHeader().getURI(),
@@ -253,7 +256,9 @@ public class ScriptsActiveScanner extends AbstractAppParamPlugin {
         super.sendAndReceive(msg, isFollowRedirect, handleAntiCSRF);
     }
 
-    /** @since 2.9.0 */
+    /**
+     * @since 2.9.0
+     */
     @Override
     public AlertBuilder newAlert() {
         return super.newAlert();

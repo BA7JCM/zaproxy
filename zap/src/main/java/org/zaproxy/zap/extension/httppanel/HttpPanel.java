@@ -48,6 +48,7 @@ import javax.swing.text.JTextComponent;
 import org.apache.commons.configuration.FileConfiguration;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jdesktop.swingx.WrapLayout;
 import org.parosproxy.paros.Constant;
 import org.parosproxy.paros.extension.AbstractPanel;
 import org.parosproxy.paros.extension.edit.ExtensionEdit;
@@ -70,7 +71,7 @@ public abstract class HttpPanel extends AbstractPanel {
 
     private static final long serialVersionUID = 5221591643257366570L;
 
-    private static final Logger logger = LogManager.getLogger(HttpPanel.class);
+    private static final Logger LOGGER = LogManager.getLogger(HttpPanel.class);
 
     private static final String NO_SUITABLE_COMPONENT_FOUND_LABEL =
             Constant.messages.getString("http.panel.noSuitableComponentFound");
@@ -162,25 +163,12 @@ public abstract class HttpPanel extends AbstractPanel {
 
         endAllOptions = new JPanel();
 
-        JPanel panel1 = new JPanel(new BorderLayout(0, 0));
-
-        JPanel panelFlow = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-
-        panelFlow.add(allOptions);
-        panelFlow.add(componentOptions);
-        panelFlow.add(toolBarComponents);
-        panelFlow.add(moreOptionsComponent);
-        panelFlow.add(toolBarMoreOptions);
-        panel1.add(panelFlow, BorderLayout.WEST);
-
-        panelFlow = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
-        panelFlow.add(endAllOptions);
-
-        panel1.add(panelFlow, BorderLayout.EAST);
-
-        panelHeader.add(panel1, BorderLayout.NORTH);
-
-        // getPanelContent().add(new EmptyComponent(), "");
+        panelHeader.add(allOptions);
+        panelHeader.add(componentOptions);
+        panelHeader.add(toolBarComponents);
+        panelHeader.add(moreOptionsComponent);
+        panelHeader.add(toolBarMoreOptions);
+        panelHeader.add(endAllOptions);
 
         initComponents();
 
@@ -196,7 +184,7 @@ public abstract class HttpPanel extends AbstractPanel {
 
     private JPanel getPanelHeader() {
         if (panelHeader == null) {
-            panelHeader = new JPanel(new BorderLayout());
+            panelHeader = new JPanel(new WrapLayout(FlowLayout.LEADING, 0, 0));
         }
         return panelHeader;
     }
@@ -370,7 +358,7 @@ public abstract class HttpPanel extends AbstractPanel {
         HttpPanelComponentInterface newComponent = components.get(name);
 
         if (newComponent == null) {
-            logger.info("No component found with name: {}", name);
+            LOGGER.info("No component found with name: {}", name);
             return;
         }
 

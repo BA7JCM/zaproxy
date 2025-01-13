@@ -58,7 +58,7 @@ public class PassiveScanData {
     private List<User> userList = null;
     private Map<CustomPage.Type, Boolean> customPageMap;
 
-    PassiveScanData(HttpMessage msg) {
+    public PassiveScanData(HttpMessage msg) {
         this.message = msg;
         this.context = getContext(message);
 
@@ -68,6 +68,10 @@ public class PassiveScanData {
         } else {
             this.techSet = getContext().getTechSet();
         }
+    }
+
+    public HttpMessage getMessage() {
+        return message;
     }
 
     private static Context getContext(HttpMessage message) {
@@ -83,7 +87,7 @@ public class PassiveScanData {
     }
 
     /**
-     * Returns an unmodifiable list of {@Code User}s for the {@code HttpMessage} being passively
+     * Returns an unmodifiable list of {@code User}s for the {@code HttpMessage} being passively
      * scanned. The list returned is based on the first {@code Context} matched.
      *
      * @return A list of users if some are available, an empty list otherwise.

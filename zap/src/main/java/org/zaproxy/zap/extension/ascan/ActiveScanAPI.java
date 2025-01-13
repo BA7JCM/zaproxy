@@ -35,8 +35,8 @@ import net.sf.json.JSONObject;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.httpclient.URI;
 import org.apache.commons.httpclient.URIException;
-import org.apache.commons.lang.StringEscapeUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
@@ -74,7 +74,7 @@ import org.zaproxy.zap.utils.ZapXmlConfiguration;
 
 public class ActiveScanAPI extends ApiImplementor {
 
-    private static Logger log = LogManager.getLogger(ActiveScanAPI.class);
+    private static final Logger LOGGER = LogManager.getLogger(ActiveScanAPI.class);
 
     private static final String PREFIX = "ascan";
     private static final String ACTION_SCAN = "scan";
@@ -293,7 +293,7 @@ public class ActiveScanAPI extends ApiImplementor {
     @SuppressWarnings({"fallthrough"})
     @Override
     public ApiResponse handleApiAction(String name, JSONObject params) throws ApiException {
-        log.debug("handleApiAction {} {}", name, params);
+        LOGGER.debug("handleApiAction {} {}", name, params);
         ScanPolicy policy;
         int categoryId;
 
@@ -351,7 +351,7 @@ public class ActiveScanAPI extends ApiImplementor {
                     try {
                         if (policyName != null && policyName.length() > 0) {
                             // Not specified, use the default one
-                            log.debug("handleApiAction scan policy ={}", policyName);
+                            LOGGER.debug("handleApiAction scan policy ={}", policyName);
                             policy = controller.getPolicyManager().getPolicy(policyName);
                         }
                     } catch (ConfigurationException e) {
@@ -411,7 +411,7 @@ public class ActiveScanAPI extends ApiImplementor {
                         Session session = Model.getSingleton().getSession();
                         session.setExcludeFromScanRegexs(new ArrayList<>());
                     } catch (DatabaseException e) {
-                        log.error(e.getMessage(), e);
+                        LOGGER.error(e.getMessage(), e);
                         throw new ApiException(ApiException.Type.INTERNAL_ERROR, e.getMessage());
                     }
                     break;
@@ -421,7 +421,7 @@ public class ActiveScanAPI extends ApiImplementor {
                         Session session = Model.getSingleton().getSession();
                         session.addExcludeFromScanRegexs(regex);
                     } catch (DatabaseException e) {
-                        log.error(e.getMessage(), e);
+                        LOGGER.error(e.getMessage(), e);
                         throw new ApiException(ApiException.Type.INTERNAL_ERROR, e.getMessage());
                     } catch (PatternSyntaxException e) {
                         throw new ApiException(ApiException.Type.ILLEGAL_PARAMETER, PARAM_REGEX);
@@ -791,7 +791,7 @@ public class ActiveScanAPI extends ApiImplementor {
                 }
             }
         } catch (NumberFormatException e) {
-            log.warn("Failed to parse scanner ID: ", e);
+            LOGGER.warn("Failed to parse scanner ID: ", e);
             throw new ApiException(ApiException.Type.ILLEGAL_PARAMETER, e.getMessage(), e);
         }
 
@@ -810,7 +810,7 @@ public class ActiveScanAPI extends ApiImplementor {
                 updateRulesOfCategoryInPolicy(categoryId, policy, s -> s.setEnabled(true));
             }
         } catch (NumberFormatException e) {
-            log.warn("Failed to parse category ID: ", e);
+            LOGGER.warn("Failed to parse category ID: ", e);
             throw new ApiException(ApiException.Type.ILLEGAL_PARAMETER, e.getMessage(), e);
         }
     }
@@ -1266,7 +1266,7 @@ public class ActiveScanAPI extends ApiImplementor {
                 sb.append("<tr><td>\n");
                 sb.append(val.getKey());
                 sb.append("</td><td>\n");
-                sb.append(StringEscapeUtils.escapeHtml(val.getValue()));
+                sb.append(StringEscapeUtils.escapeHtml4(val.getValue()));
                 sb.append("</td></tr>\n");
             }
             sb.append("<tr><td>\n");
@@ -1275,11 +1275,11 @@ public class ActiveScanAPI extends ApiImplementor {
             sb.append("<table border=\"1\">\n");
             for (Entry<String, ?> val : typeData.entrySet()) {
                 sb.append("<tr><td>\n");
-                sb.append(StringEscapeUtils.escapeHtml(val.getKey()));
+                sb.append(StringEscapeUtils.escapeHtml4(val.getKey()));
                 sb.append("</td><td>\n");
                 Object value = val.getValue();
                 if (value != null) {
-                    sb.append(StringEscapeUtils.escapeHtml(value.toString()));
+                    sb.append(StringEscapeUtils.escapeHtml4(value.toString()));
                 }
                 sb.append("</td></tr>\n");
             }
@@ -1380,7 +1380,7 @@ public class ActiveScanAPI extends ApiImplementor {
                 sb.append("<tr><td>\n");
                 sb.append(val.getKey());
                 sb.append("</td><td>\n");
-                sb.append(StringEscapeUtils.escapeHtml(val.getValue()));
+                sb.append(StringEscapeUtils.escapeHtml4(val.getValue()));
                 sb.append("</td></tr>\n");
             }
             sb.append("<tr><td>\n");

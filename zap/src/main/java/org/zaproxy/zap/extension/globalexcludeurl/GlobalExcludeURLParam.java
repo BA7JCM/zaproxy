@@ -29,9 +29,14 @@ import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.common.AbstractParam;
 import org.zaproxy.zap.extension.api.ZapApiIgnore;
 
+/**
+ * @deprecated (2.13.0) Superseded by Network add-on options.
+ */
+@SuppressWarnings("removal")
+@Deprecated(since = "2.13.0", forRemoval = true)
 public class GlobalExcludeURLParam extends AbstractParam {
 
-    private static final Logger logger = LogManager.getLogger(GlobalExcludeURLParam.class);
+    private static final Logger LOGGER = LogManager.getLogger(GlobalExcludeURLParam.class);
 
     private static final String GLOBAL_EXCLUDE_URL_BASE_KEY = "globalexcludeurl";
 
@@ -219,7 +224,7 @@ public class GlobalExcludeURLParam extends AbstractParam {
                 }
             }
         } catch (ConversionException e) {
-            logger.error("Error while loading Global Exclude URL tokens: {}", e.getMessage(), e);
+            LOGGER.error("Error while loading Global Exclude URL tokens: {}", e.getMessage(), e);
             this.tokens = new ArrayList<>(defaultList.size());
             this.enabledTokensNames = new ArrayList<>(defaultList.size());
         }

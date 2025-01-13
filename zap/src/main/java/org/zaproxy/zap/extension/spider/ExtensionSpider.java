@@ -30,7 +30,7 @@ import java.util.List;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import org.apache.commons.httpclient.URI;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
@@ -43,12 +43,10 @@ import org.parosproxy.paros.model.Session;
 import org.parosproxy.paros.model.SiteNode;
 import org.zaproxy.zap.extension.help.ExtensionHelp;
 import org.zaproxy.zap.model.Context;
-import org.zaproxy.zap.model.DefaultValueGenerator;
 import org.zaproxy.zap.model.ScanController;
 import org.zaproxy.zap.model.StructuralNode;
 import org.zaproxy.zap.model.StructuralSiteNode;
 import org.zaproxy.zap.model.Target;
-import org.zaproxy.zap.model.ValueGenerator;
 import org.zaproxy.zap.users.User;
 import org.zaproxy.zap.view.ZapMenuItem;
 
@@ -58,10 +56,12 @@ import org.zaproxy.zap.view.ZapMenuItem;
  * @deprecated (2.12.0) See the spider add-on in zap-extensions instead.
  */
 @Deprecated
+@SuppressWarnings("removal")
 public class ExtensionSpider extends ExtensionAdaptor
         implements SessionChangedListener, ScanController<SpiderScan> {
 
-    private ValueGenerator generator = new DefaultValueGenerator();
+    private org.zaproxy.zap.model.ValueGenerator generator =
+            new org.zaproxy.zap.model.DefaultValueGenerator();
 
     public static final int EXTENSION_ORDER = 30;
 
@@ -121,14 +121,14 @@ public class ExtensionSpider extends ExtensionAdaptor
         this.scanController = new SpiderScanController(this);
     }
 
-    public void setValueGenerator(ValueGenerator generator) {
+    public void setValueGenerator(org.zaproxy.zap.model.ValueGenerator generator) {
         if (generator == null) {
             throw new IllegalArgumentException("Parameter generator must not be null.");
         }
         this.generator = generator;
     }
 
-    public ValueGenerator getValueGenerator() {
+    public org.zaproxy.zap.model.ValueGenerator getValueGenerator() {
         return generator;
     }
 
@@ -419,7 +419,7 @@ public class ExtensionSpider extends ExtensionAdaptor
      *
      * @param parser the parser
      * @throws IllegalArgumentException if the given parameter is {@code null}.
-     * @see #removeCustomParser(SpiderParser)
+     * @see #removeCustomParser(org.zaproxy.zap.spider.parser.SpiderParser)
      */
     public void addCustomParser(org.zaproxy.zap.spider.parser.SpiderParser parser) {
         validateParameterNonNull(parser, "parser");
@@ -440,7 +440,7 @@ public class ExtensionSpider extends ExtensionAdaptor
      * @param parser the parser
      * @throws IllegalArgumentException if the given parameter is {@code null}.
      * @since 2.6.0
-     * @see #addCustomParser(SpiderParser)
+     * @see #addCustomParser(org.zaproxy.zap.spider.parser.SpiderParser)
      */
     public void removeCustomParser(org.zaproxy.zap.spider.parser.SpiderParser parser) {
         validateParameterNonNull(parser, "parser");
@@ -455,7 +455,7 @@ public class ExtensionSpider extends ExtensionAdaptor
      *
      * @param filter the filter
      * @throws IllegalArgumentException if the given parameter is {@code null}.
-     * @see #removeCustomFetchFilter(FetchFilter)
+     * @see #removeCustomFetchFilter(org.zaproxy.zap.spider.filters.FetchFilter)
      */
     public void addCustomFetchFilter(org.zaproxy.zap.spider.filters.FetchFilter filter) {
         validateParameterNonNull(filter, "filter");
@@ -470,7 +470,7 @@ public class ExtensionSpider extends ExtensionAdaptor
      * @param filter the filter
      * @throws IllegalArgumentException if the given parameter is {@code null}.
      * @since 2.6.0
-     * @see #addCustomFetchFilter(FetchFilter)
+     * @see #addCustomFetchFilter(org.zaproxy.zap.spider.filters.FetchFilter)
      */
     public void removeCustomFetchFilter(org.zaproxy.zap.spider.filters.FetchFilter filter) {
         validateParameterNonNull(filter, "filter");
@@ -485,7 +485,7 @@ public class ExtensionSpider extends ExtensionAdaptor
      *
      * @param filter the filter
      * @throws IllegalArgumentException if the given parameter is {@code null}.
-     * @see #removeCustomParseFilter(ParseFilter)
+     * @see #removeCustomParseFilter(org.zaproxy.zap.spider.filters.ParseFilter)
      */
     public void addCustomParseFilter(org.zaproxy.zap.spider.filters.ParseFilter filter) {
         validateParameterNonNull(filter, "filter");
@@ -500,7 +500,7 @@ public class ExtensionSpider extends ExtensionAdaptor
      * @param filter the filter
      * @throws IllegalArgumentException if the given parameter is {@code null}.
      * @since 2.6.0
-     * @see #addCustomParseFilter(ParseFilter)
+     * @see #addCustomParseFilter(org.zaproxy.zap.spider.filters.ParseFilter)
      */
     public void removeCustomParseFilter(org.zaproxy.zap.spider.filters.ParseFilter filter) {
         validateParameterNonNull(filter, "filter");

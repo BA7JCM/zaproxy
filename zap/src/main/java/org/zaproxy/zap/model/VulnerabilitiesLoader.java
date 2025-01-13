@@ -36,7 +36,6 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.ConversionException;
-import org.apache.commons.lang.Validate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.zaproxy.zap.utils.LocaleUtils;
@@ -46,10 +45,13 @@ import org.zaproxy.zap.utils.ZapXmlConfiguration;
  * Helper class that loads {@code Vulnerability} from a XML file for a given {@code Locale}.
  *
  * @see Vulnerability
+ * @deprecated (2.14.0) The vulnerabilities were moved to Common Library add-on.
  */
+@SuppressWarnings("removal")
+@Deprecated(since = "2.14.0", forRemoval = true)
 public class VulnerabilitiesLoader {
 
-    private static final Logger logger = LogManager.getLogger(VulnerabilitiesLoader.class);
+    private static final Logger LOGGER = LogManager.getLogger(VulnerabilitiesLoader.class);
 
     private final Path directory;
     private final String fileName;
@@ -67,13 +69,21 @@ public class VulnerabilitiesLoader {
      *     and {@code fileExtension} are {@code null} or empty
      */
     public VulnerabilitiesLoader(Path directory, String fileName, String fileExtension) {
-        Validate.notNull(directory, "Parameter directory must not be null.");
-        Validate.notEmpty(fileName, "Parameter fileName must not be null nor empty.");
-        Validate.notEmpty(fileExtension, "Parameter fileExtension must not be null nor empty.");
+        if (directory == null) {
+            throw new IllegalArgumentException("Parameter directory must not be null.");
+        }
+        validateNotEmpty(fileName, "Parameter fileName must not be null nor empty.");
+        validateNotEmpty(fileExtension, "Parameter fileExtension must not be null nor empty.");
 
         this.directory = directory;
         this.fileName = fileName;
         this.fileExtension = fileExtension;
+    }
+
+    private static void validateNotEmpty(String value, String message) {
+        if (value == null || value.isEmpty()) {
+            throw new IllegalArgumentException(message);
+        }
     }
 
     /**
@@ -99,7 +109,7 @@ public class VulnerabilitiesLoader {
                         locale,
                         candidateFilename -> {
                             if (filenames.contains(candidateFilename)) {
-                                logger.debug(
+                                LOGGER.debug(
                                         "loading vulnerabilities from {} for locale {}",
                                         candidateFilename,
                                         locale);
@@ -125,7 +135,7 @@ public class VulnerabilitiesLoader {
         try (InputStream is = new BufferedInputStream(Files.newInputStream(file))) {
             return loadVulnerabilities(is);
         } catch (IOException e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
             return null;
         }
     }
@@ -135,7 +145,7 @@ public class VulnerabilitiesLoader {
         try {
             config = new ZapXmlConfiguration(is);
         } catch (ConfigurationException e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
             return null;
         }
 
@@ -143,7 +153,7 @@ public class VulnerabilitiesLoader {
         try {
             test = config.getStringArray("vuln_items");
         } catch (ConversionException e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
             return null;
         }
         final int numberOfVulns = test.length;
@@ -159,7 +169,7 @@ public class VulnerabilitiesLoader {
                 references =
                         new ArrayList<>(Arrays.asList(config.getStringArray(name + ".reference")));
             } catch (ConversionException e) {
-                logger.error(e.getMessage(), e);
+                LOGGER.error(e.getMessage(), e);
                 references = new ArrayList<>(0);
             }
 
@@ -185,7 +195,7 @@ public class VulnerabilitiesLoader {
      */
     List<String> getListOfVulnerabilitiesFiles() {
         if (!Files.exists(directory)) {
-            logger.debug(
+            LOGGER.debug(
                     "Skipping read of vulnerabilities, the directory does not exist: {}",
                     directory.toAbsolutePath());
             return Collections.emptyList();
@@ -211,7 +221,7 @@ public class VulnerabilitiesLoader {
                         }
                     });
         } catch (IOException e) {
-            logger.error("An error occurred while walking directory: {}", directory, e);
+            LOGGER.error("An error occurred while walking directory: {}", directory, e);
         }
         return fileNames;
     }

@@ -91,6 +91,10 @@
 // ZAP: 2022/02/28 Remove code deprecated in 2.6.0
 // ZAP: 2022/08/23 Use SiteMap#createTree to create a new Sites Tree when loading a session.
 // ZAP: 2022/09/21 Use format specifiers instead of concatenation when logging.
+// ZAP: 2023/01/10 Tidy up logger.
+// ZAP: 2023/05/21 Allow context import functionality to accept an XML config as input (Issue 7421).
+// ZAP: 2023/06/02 Allow to set the global exclude URLs.
+// ZAP: 2024/01/19 Use the non-regex hierarchic name of a node to check if it is in scope.
 package org.parosproxy.paros.model;
 
 import java.awt.EventQueue;
@@ -99,7 +103,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -107,6 +110,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import javax.swing.tree.TreeNode;
 import org.apache.commons.configuration.ConfigurationException;
@@ -139,7 +143,7 @@ import org.zaproxy.zap.utils.ZapXmlConfiguration;
 public class Session {
 
     // ZAP: Added logger
-    private static Logger log = LogManager.getLogger(Session.class);
+    private static final Logger LOGGER = LogManager.getLogger(Session.class);
 
     private static final String ROOT = "session";
 
@@ -166,6 +170,8 @@ public class Session {
     private SiteMap siteTree = null;
 
     private ParameterParser defaultParamParser = new StandardParameterParser();
+
+    private Supplier<List<String>> globalExcludedUrlsSupplier;
 
     /**
      * Constructor for the current session. The current system time will be used as the session ID.
@@ -207,7 +213,7 @@ public class Session {
             model.getDb().discardSession(getSessionId());
         } catch (DatabaseException e) {
             // ZAP: Log exceptions
-            log.warn(e.getMessage(), e);
+            LOGGER.warn(e.getMessage(), e);
         }
         discardContexts();
     }
@@ -216,20 +222,30 @@ public class Session {
         discardContexts();
     }
 
-    /** @return Returns the sessionDesc. */
+    /**
+     * @return Returns the sessionDesc.
+     */
     public String getSessionDesc() {
         return sessionDesc;
     }
 
-    /** @return Returns the sessionId. */
+    /**
+     * @return Returns the sessionId.
+     */
     public long getSessionId() {
         return sessionId;
     }
-    /** @return Returns the name. */
+
+    /**
+     * @return Returns the name.
+     */
     public String getSessionName() {
         return sessionName;
     }
-    /** @return Returns the siteTree. */
+
+    /**
+     * @return Returns the siteTree.
+     */
     public SiteMap getSiteTree() {
         return siteTree;
     }
@@ -329,19 +345,19 @@ public class Session {
 
         // Load the session urls
         this.setExcludeFromProxyRegexs(
-                sessionUrlListToStingList(
+                sessionUrlListToStringList(
                         model.getDb()
                                 .getTableSessionUrl()
                                 .getUrlsForType(RecordSessionUrl.TYPE_EXCLUDE_FROM_PROXY)));
 
         this.setExcludeFromScanRegexs(
-                sessionUrlListToStingList(
+                sessionUrlListToStringList(
                         model.getDb()
                                 .getTableSessionUrl()
                                 .getUrlsForType(RecordSessionUrl.TYPE_EXCLUDE_FROM_SCAN)));
 
         this.setExcludeFromSpiderRegexs(
-                sessionUrlListToStingList(
+                sessionUrlListToStringList(
                         model.getDb()
                                 .getTableSessionUrl()
                                 .getUrlsForType(RecordSessionUrl.TYPE_EXCLUDE_FROM_SPIDER)));
@@ -381,7 +397,7 @@ public class Session {
                 if (i % 100 == 99) Thread.yield();
             } catch (Exception e) {
                 // ZAP: Log exceptions
-                log.warn(e.getMessage(), e);
+                LOGGER.warn(e.getMessage(), e);
             }
         }
 
@@ -394,7 +410,8 @@ public class Session {
                                 HistoryReference.TYPE_SPIDER,
                                 HistoryReference.TYPE_BRUTE_FORCE,
                                 HistoryReference.TYPE_SPIDER_AJAX,
-                                HistoryReference.TYPE_SCANNER);
+                                HistoryReference.TYPE_SCANNER,
+                                HistoryReference.TYPE_CLIENT_SPIDER);
 
         for (int i = 0; i < list.size(); i++) {
             // ZAP: Removed unnecessary cast.
@@ -424,7 +441,7 @@ public class Session {
 
             } catch (Exception e) {
                 // ZAP: Log exceptions
-                log.warn(e.getMessage(), e);
+                LOGGER.warn(e.getMessage(), e);
             }
         }
         List<RecordContext> contextData = model.getDb().getTableContext().getAllData();
@@ -474,7 +491,7 @@ public class Session {
                 if (strs.size() == 1) {
                     Class<?> c = ExtensionFactory.getAddOnLoader().loadClass(strs.get(0));
                     if (c == null) {
-                        log.error(
+                        LOGGER.error(
                                 "Failed to load URL parser for context {} : {}",
                                 ctx.getId(),
                                 strs.get(0));
@@ -491,7 +508,7 @@ public class Session {
                     }
                 }
             } catch (Exception e) {
-                log.error("Failed to load URL parser for context {}", ctx.getId(), e);
+                LOGGER.error("Failed to load URL parser for context {}", ctx.getId(), e);
             }
             try {
                 // Set up the URL parameter parser
@@ -501,7 +518,7 @@ public class Session {
                 if (strs.size() == 1) {
                     Class<?> c = ExtensionFactory.getAddOnLoader().loadClass(strs.get(0));
                     if (c == null) {
-                        log.error(
+                        LOGGER.error(
                                 "Failed to load POST parser for context {} : {}",
                                 ctx.getId(),
                                 strs.get(0));
@@ -518,7 +535,7 @@ public class Session {
                     }
                 }
             } catch (Exception e) {
-                log.error("Failed to load POST parser for context {}", ctx.getId(), e);
+                LOGGER.error("Failed to load POST parser for context {}", ctx.getId(), e);
             }
 
             try {
@@ -530,7 +547,7 @@ public class Session {
                     ctx.addDataDrivenNodes(new StructuralNodeModifier(str));
                 }
             } catch (Exception e) {
-                log.error("Failed to load data driven nodes for context {}", ctx.getId(), e);
+                LOGGER.error("Failed to load data driven nodes for context {}", ctx.getId(), e);
             }
 
             ctx.restructureSiteTree();
@@ -567,7 +584,7 @@ public class Session {
         return true;
     }
 
-    private List<String> sessionUrlListToStingList(List<RecordSessionUrl> rsuList) {
+    private List<String> sessionUrlListToStringList(List<RecordSessionUrl> rsuList) {
         List<String> urlList = new ArrayList<>(rsuList.size());
         for (RecordSessionUrl url : rsuList) {
             urlList.add(url.getUrl());
@@ -592,7 +609,7 @@ public class Session {
                                     save(fileName);
                                 } catch (Exception e) {
                                     // ZAP: Log exceptions
-                                    log.warn(e.getMessage(), e);
+                                    LOGGER.warn(e.getMessage(), e);
                                     thrownException = e;
                                 }
                                 if (callback != null) {
@@ -669,7 +686,7 @@ public class Session {
                                     snapshot(fileName);
                                 } catch (Exception e) {
                                     // ZAP: Log exceptions
-                                    log.warn(e.getMessage(), e);
+                                    LOGGER.warn(e.getMessage(), e);
                                     thrownException = e;
                                 }
                                 if (callback != null) {
@@ -692,19 +709,26 @@ public class Session {
         model.snapshotSessionDb(this.fileName, fileName);
     }
 
-    /** @param sessionDesc The sessionDesc to set. */
+    /**
+     * @param sessionDesc The sessionDesc to set.
+     */
     public void setSessionDesc(String sessionDesc) {
         this.sessionDesc = sessionDesc;
         configuration.setProperty(SESSION_DESC, sessionDesc);
     }
 
-    /** @param sessionId The sessionId to set. */
+    /**
+     * @param sessionId The sessionId to set.
+     */
     public void setSessionId(long sessionId) {
         this.sessionId = sessionId;
         // setText(SESSION_ID, Long.toString(sessionId));
         configuration.setProperty(SESSION_ID, Long.toString(sessionId));
     }
-    /** @param name The name to set. */
+
+    /**
+     * @param name The name to set.
+     */
     public void setSessionName(String name) {
         this.sessionName = name;
         // setText(SESSION_NAME, name);
@@ -730,7 +754,7 @@ public class Session {
                 saveSiteTree((SiteNode) node.getChildAt(i));
             } catch (Exception e) {
                 // ZAP: Log exceptions
-                log.warn(e.getMessage(), e);
+                LOGGER.warn(e.getMessage(), e);
             }
         }
     }
@@ -808,7 +832,7 @@ public class Session {
                             }
                         });
             } catch (Exception e) {
-                log.error(e.getMessage(), e);
+                LOGGER.error(e.getMessage(), e);
             }
         }
     }
@@ -817,7 +841,7 @@ public class Session {
         if (sn == null) {
             return false;
         }
-        return isIncludedInScope(sn.getHierarchicNodeName());
+        return isIncludedInScope(sn.getHierarchicNodeName(false));
     }
 
     private boolean isIncludedInScope(String url) {
@@ -840,7 +864,7 @@ public class Session {
         if (sn == null) {
             return false;
         }
-        return isExcludedFromScope(sn.getHierarchicNodeName());
+        return isExcludedFromScope(sn.getHierarchicNodeName(false));
     }
 
     private boolean isExcludedFromScope(String url) {
@@ -869,7 +893,7 @@ public class Session {
         try {
             return this.isInScope(href.getURI().toString());
         } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
         return false;
     }
@@ -878,7 +902,7 @@ public class Session {
         if (sn == null) {
             return false;
         }
-        return isInScope(sn.getHierarchicNodeName());
+        return isInScope(sn.getHierarchicNodeName(false));
     }
 
     public boolean isInScope(String url) {
@@ -1109,8 +1133,26 @@ public class Session {
      * @since 2.3.0
      */
     public List<String> getGlobalExcludeURLRegexs() {
-        return Collections.unmodifiableList(
-                model.getOptionsParam().getGlobalExcludeURLParam().getTokensNames());
+        var supplier = globalExcludedUrlsSupplier;
+        if (supplier != null) {
+            var list = supplier.get();
+            if (list != null) {
+                return list;
+            }
+        }
+        return List.of();
+    }
+
+    /**
+     * Sets the supplier of global exclude URLs.
+     *
+     * <p><strong>Note:</strong> Not part of the public API.
+     *
+     * @param supplier the supplier of global exclude URLs.
+     * @since 2.13.0
+     */
+    public void setGlobalExcludedUrlRegexsSupplier(Supplier<List<String>> supplier) {
+        globalExcludedUrlsSupplier = supplier;
     }
 
     public void setSessionUrls(int type, List<String> urls) throws DatabaseException {
@@ -1182,7 +1224,7 @@ public class Session {
             try {
                 return Integer.parseInt(dataList.get(0).getData());
             } catch (NumberFormatException e) {
-                log.error("Failed to parse context value type {}", type, e);
+                LOGGER.error("Failed to parse context value type {}", type, e);
             }
         }
         return defaultValue;
@@ -1265,7 +1307,7 @@ public class Session {
 
             model.saveContext(c);
         } catch (DatabaseException e) {
-            log.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
 
         if (View.isInitialised()) {
@@ -1363,7 +1405,7 @@ public class Session {
         try {
             this.clearContextData(c.getId());
         } catch (DatabaseException e) {
-            log.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
 
         for (OnContextsChangedListener l : contextsChangedListeners) {
@@ -1402,7 +1444,7 @@ public class Session {
         if (sn == null) {
             return new ArrayList<>();
         }
-        return getContextsForUrl(sn.getHierarchicNodeName());
+        return getContextsForUrl(sn.getHierarchicNodeName(false));
     }
 
     public List<Context> getContextsForUrl(String url) {
@@ -1486,11 +1528,43 @@ public class Session {
      *     empty or if a context with the same name already exists.
      */
     public Context importContext(File file)
-            throws ConfigurationException, ClassNotFoundException, InstantiationException,
-                    IllegalAccessException, IllegalArgumentException, InvocationTargetException,
-                    NoSuchMethodException, SecurityException {
-        ZapXmlConfiguration config = new ZapXmlConfiguration(file);
+            throws ConfigurationException,
+                    ClassNotFoundException,
+                    InstantiationException,
+                    IllegalAccessException,
+                    IllegalArgumentException,
+                    InvocationTargetException,
+                    NoSuchMethodException,
+                    SecurityException {
+        return importContext(new ZapXmlConfiguration(file));
+    }
 
+    /**
+     * Imports a context from the specified XML config.
+     *
+     * @param config the XML config that contains the context data
+     * @return the imported {@code Context}, already added to the session.
+     * @throws ConfigurationException
+     * @throws ClassNotFoundException
+     * @throws InstantiationException
+     * @throws IllegalAccessException
+     * @throws IllegalArgumentException
+     * @throws InvocationTargetException
+     * @throws NoSuchMethodException
+     * @throws SecurityException
+     * @throws IllegalContextNameException if context's name is not provided or it's empty or if a
+     *     context with the same name already exists.
+     * @since 2.13.0
+     */
+    public Context importContext(ZapXmlConfiguration config)
+            throws ConfigurationException,
+                    ClassNotFoundException,
+                    InstantiationException,
+                    IllegalAccessException,
+                    IllegalArgumentException,
+                    InvocationTargetException,
+                    NoSuchMethodException,
+                    SecurityException {
         String name = config.getString(Context.CONTEXT_CONFIG_NAME);
         validateContextName(name);
 
@@ -1721,13 +1795,17 @@ public class Session {
         return this.getFormParamParser(uri.toString()).parseParameters(formData);
     }
 
-    /** @deprecated use {@link SessionStructure#getTeeePath(Model, URI)} */
+    /**
+     * @deprecated use {@link SessionStructure#getTreePath(Model, URI)}
+     */
     @Deprecated
     public List<String> getTreePath(URI uri) throws URIException {
         return SessionStructure.getTreePath(Model.getSingleton(), uri);
     }
 
-    /** @deprecated use {@link SessionStructure#getTeeePath(Model, HttpMessage)} */
+    /**
+     * @deprecated use {@link SessionStructure#getTreePath(Model, HttpMessage)}
+     */
     @Deprecated
     public List<String> getTreePath(HttpMessage msg) throws URIException {
         return SessionStructure.getTreePath(Model.getSingleton(), msg);

@@ -41,6 +41,9 @@
 // ZAP: 2022/05/11 Use a unique ID to identify the panels instead of their name (Issue 5637).
 // ZAP: 2022/06/08 Fix resizing issues.
 // ZAP: 2022/08/05 Address warns with Java 18 (Issue 7389).
+// ZAP: 2023/01/10 Tidy up logger.
+// ZAP: 2023/08/23 Add tooltip and prompt to searchTextField (Issue 8019)
+// ZAP: 2023/10/20 Handle Exception while initializing the panels.
 package org.parosproxy.paros.view;
 
 import java.awt.BorderLayout;
@@ -63,7 +66,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import javax.swing.BorderFactory;
-import javax.swing.ImageIcon;
+import javax.swing.Icon;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -133,7 +136,7 @@ public class AbstractParamContainerPanel extends JSplitPane {
     private ShowHelpAction showHelpAction = null;
 
     // ZAP: Added logger
-    private static Logger log = LogManager.getLogger(AbstractParamContainerPanel.class);
+    private static final Logger LOGGER = LogManager.getLogger(AbstractParamContainerPanel.class);
 
     /**
      * Constructs an {@code AbstractParamContainerPanel} with a default root node's name ({@value
@@ -657,7 +660,14 @@ public class AbstractParamContainerPanel extends JSplitPane {
      */
     public void initParam(Object obj) {
         paramObject = obj;
-        panels.forEach(e -> e.initParam(obj));
+        panels.forEach(
+                e -> {
+                    try {
+                        e.initParam(obj);
+                    } catch (Exception ex) {
+                        LOGGER.error("Failed to init the panel: ", ex);
+                    }
+                });
     }
 
     /**
@@ -675,7 +685,7 @@ public class AbstractParamContainerPanel extends JSplitPane {
             try {
                 panel.validateParam(paramObject);
             } catch (NullPointerException e) {
-                log.error("Failed to validate the panel: ", e);
+                LOGGER.error("Failed to validate the panel: ", e);
                 showInternalError(e);
             } catch (Exception e) {
                 showParamPanel(panel);
@@ -712,7 +722,7 @@ public class AbstractParamContainerPanel extends JSplitPane {
             try {
                 panel.saveParam(paramObject);
             } catch (NullPointerException e) {
-                log.error("Failed to save the panel: ", e);
+                LOGGER.error("Failed to save the panel: ", e);
                 showInternalError(e);
             }
         }
@@ -808,7 +818,7 @@ public class AbstractParamContainerPanel extends JSplitPane {
 
         } catch (Exception e) {
             // ZAP: log errors
-            log.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -933,6 +943,10 @@ public class AbstractParamContainerPanel extends JSplitPane {
         if (searchTextField == null) {
             searchTextField = new ZapTextField();
 
+            searchTextField.setPrompt(
+                    Constant.messages.getString("paramcontainer.panel.searchbar.prompt"));
+            searchTextField.setToolTipText(
+                    Constant.messages.getString("paramcontainer.panel.searchbar.tooltip"));
             searchTextField.addKeyListener(
                     new KeyAdapter() {
 
@@ -950,10 +964,8 @@ public class AbstractParamContainerPanel extends JSplitPane {
     private JButton getSearchButton() {
         if (btnSearch == null) {
             btnSearch = new JButton();
-            btnSearch.setIcon(
-                    new ImageIcon(
-                            AbstractParamContainerPanel.class.getResource(
-                                    "/resource/icon/16/049.png"))); // search icon
+            // search icon
+            btnSearch.setIcon(getScaledIcon("/resource/icon/16/049.png"));
             btnSearch.setToolTipText(
                     Constant.messages.getString("paramcontainer.panel.search.tooltip"));
 
@@ -969,13 +981,15 @@ public class AbstractParamContainerPanel extends JSplitPane {
         return btnSearch;
     }
 
+    private static Icon getScaledIcon(String path) {
+        return DisplayUtils.getScaledIcon(AbstractParamContainerPanel.class.getResource(path));
+    }
+
     private JButton getClearSearchButton() {
         if (btnClearSearch == null) {
             btnClearSearch = new JButton();
-            btnClearSearch.setIcon(
-                    new ImageIcon(
-                            AbstractParamContainerPanel.class.getResource(
-                                    "/resource/icon/16/101.png"))); // cancel icon
+            // cancel icon
+            btnClearSearch.setIcon(getScaledIcon("/resource/icon/16/101.png"));
             btnClearSearch.setToolTipText(
                     Constant.messages.getString("paramcontainer.panel.clear.tooltip"));
 

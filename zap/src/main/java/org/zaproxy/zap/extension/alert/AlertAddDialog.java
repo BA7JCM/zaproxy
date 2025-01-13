@@ -35,11 +35,12 @@ import org.parosproxy.paros.extension.AbstractDialog;
 import org.parosproxy.paros.model.HistoryReference;
 import org.parosproxy.paros.model.Model;
 import org.parosproxy.paros.network.HttpMessage;
+import org.zaproxy.zap.utils.Stats;
 
 @SuppressWarnings("serial")
 public class AlertAddDialog extends AbstractDialog {
 
-    private static final Logger logger = LogManager.getLogger(AlertAddDialog.class);
+    private static final Logger LOGGER = LogManager.getLogger(AlertAddDialog.class);
 
     private static final long serialVersionUID = 1L;
 
@@ -77,7 +78,9 @@ public class AlertAddDialog extends AbstractDialog {
 
     private AlertViewPanel alertViewPanel = null;
 
-    /** @throws HeadlessException */
+    /**
+     * @throws HeadlessException
+     */
     public AlertAddDialog() throws HeadlessException {
         super();
         initialize();
@@ -113,6 +116,7 @@ public class AlertAddDialog extends AbstractDialog {
 
         pack();
     }
+
     /**
      * This method initializes jPanel
      *
@@ -166,6 +170,7 @@ public class AlertAddDialog extends AbstractDialog {
         }
         return jPanel;
     }
+
     /**
      * This method initializes btnStart
      *
@@ -189,6 +194,7 @@ public class AlertAddDialog extends AbstractDialog {
                                 if (alert.getAlertId() >= 0) {
                                     // Its an existing alert so save it
                                     extAlert.updateAlert(alert);
+                                    Stats.incCounter("stats.ui.alert.dialog.edit");
                                 } else {
                                     if (httpMessage != null) {
                                         historyRef =
@@ -201,9 +207,10 @@ public class AlertAddDialog extends AbstractDialog {
                                     alert.setSource(Alert.Source.MANUAL);
                                     // Raise it
                                     extAlert.alertFound(alert, historyRef);
+                                    Stats.incCounter("stats.ui.alert.dialog.add");
                                 }
                             } catch (Exception ex) {
-                                logger.error(ex.getMessage(), ex);
+                                LOGGER.error(ex.getMessage(), ex);
                             }
                             clearAndCloseDialog();
                         }

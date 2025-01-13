@@ -32,8 +32,13 @@ import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.parosproxy.paros.CommandLine;
 import org.zaproxy.zap.eventBus.EventBus;
 import org.zaproxy.zap.eventBus.SimpleEventBus;
+import org.zaproxy.zap.utils.Stats;
 
 public class ZAP {
+
+    static {
+        System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
+    }
 
     /**
      * ZAP can be run in 4 different ways: cmdline: an inline process that exits when it completes
@@ -52,7 +57,7 @@ public class ZAP {
     private static ProcessType processType;
 
     private static final EventBus eventBus = new SimpleEventBus();
-    private static final Logger logger = LogManager.getLogger(ZAP.class);
+    private static final Logger LOGGER = LogManager.getLogger(ZAP.class);
 
     static {
         try {
@@ -97,7 +102,7 @@ public class ZAP {
             }
 
         } catch (final Exception e) {
-            logger.fatal(e.getMessage(), e);
+            LOGGER.fatal(e.getMessage(), e);
             System.exit(1);
         }
     }
@@ -114,7 +119,7 @@ public class ZAP {
                                 .equals(x)) {
                             return;
                         }
-                        if (x.startsWith("Multiplexing LAF")) {
+                        if (x != null && x.startsWith("Multiplexing LAF")) {
                             return;
                         }
                         super.println(x);
@@ -147,20 +152,31 @@ public class ZAP {
 
     static final class UncaughtExceptionLogger implements Thread.UncaughtExceptionHandler {
 
-        private static final Logger logger = LogManager.getLogger(UncaughtExceptionLogger.class);
+        private static final Logger LOGGER = LogManager.getLogger(UncaughtExceptionLogger.class);
 
         private boolean loggerConfigured = false;
 
         @Override
+        @SuppressWarnings("removal")
         public void uncaughtException(Thread t, Throwable e) {
             if (!(e instanceof ThreadDeath)) {
+                updateStats();
+
                 if (loggerConfigured || isLoggerConfigured()) {
-                    logger.error("Exception in thread \"{}\"", t.getName(), e);
+                    LOGGER.error("Exception in thread \"{}\"", t.getName(), e);
 
                 } else {
                     System.err.println("Exception in thread \"" + t.getName() + "\"");
                     e.printStackTrace();
                 }
+            }
+        }
+
+        private static void updateStats() {
+            try {
+                Stats.incCounter("stats.error.core.uncaught");
+            } catch (Throwable ignore) {
+                // Already handling an earlier error...
             }
         }
 
@@ -190,7 +206,7 @@ public class ZAP {
         private final PrintStream delegatee;
 
         public DelegatorPrintStream(PrintStream delegatee) {
-            super(NullOutputStream.NULL_OUTPUT_STREAM);
+            super(NullOutputStream.INSTANCE);
             this.delegatee = delegatee;
         }
 

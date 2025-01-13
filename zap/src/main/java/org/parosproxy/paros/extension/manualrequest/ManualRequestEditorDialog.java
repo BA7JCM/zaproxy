@@ -43,6 +43,7 @@
 // ZAP: 2021/02/12 Add shortcut key to Send button (Issue 6448).
 // ZAP: 2022/06/08 Fix resizing issues.
 // ZAP: 2022/06/23 Do not implement Tab.
+// ZAP: 2022/09/14 Deprecate the class.
 // ZAP: 2022/09/21 Use format specifiers instead of concatenation when logging.
 package org.parosproxy.paros.extension.manualrequest;
 
@@ -56,7 +57,7 @@ import java.awt.event.WindowEvent;
 import javax.net.ssl.SSLException;
 import javax.swing.JButton;
 import javax.swing.JPanel;
-import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.parosproxy.paros.Constant;
@@ -72,7 +73,12 @@ import org.zaproxy.zap.extension.httppanel.Message;
 import org.zaproxy.zap.utils.DisplayUtils;
 import org.zaproxy.zap.view.ZapMenuItem;
 
-/** Send custom crafted messages via HTTP or other TCP based protocols. */
+/**
+ * Send custom crafted messages via HTTP or other TCP based protocols.
+ *
+ * @deprecated (2.12.0) Replaced by Requester add-on.
+ */
+@Deprecated
 public abstract class ManualRequestEditorDialog extends AbstractFrame {
     private static final long serialVersionUID = 1L;
 

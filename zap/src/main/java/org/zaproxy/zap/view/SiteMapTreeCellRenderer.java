@@ -85,7 +85,7 @@ public class SiteMapTreeCellRenderer extends DefaultTreeCellRenderer {
 
     private static final long serialVersionUID = -4278691012245035225L;
 
-    private static Logger log = LogManager.getLogger(SiteMapPanel.class);
+    private static final Logger LOGGER = LogManager.getLogger(SiteMapTreeCellRenderer.class);
 
     private List<SiteMapListener> listeners;
     private JPanel component;
@@ -127,7 +127,7 @@ public class SiteMapTreeCellRenderer extends DefaultTreeCellRenderer {
 
             // folder / file icons with scope 'target' if relevant
             if (node.isRoot()) {
-                component.add(wrap(ROOT_ICON)); // 'World' icon
+                component.add(wrap(DisplayUtils.getScaledIcon(ROOT_ICON))); // 'World' icon
             } else {
                 OverlayIcon icon;
                 if (node.isDataDriven()) {
@@ -208,7 +208,7 @@ public class SiteMapTreeCellRenderer extends DefaultTreeCellRenderer {
                 try {
                     return node.getHistoryReference();
                 } catch (Exception e) {
-                    log.warn(e.getMessage(), e);
+                    LOGGER.warn(e.getMessage(), e);
                 }
             }
         }

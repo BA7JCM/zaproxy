@@ -496,6 +496,7 @@ class HostProcessUnitTest {
     }
 
     @Test
+    @SuppressWarnings("removal")
     void shouldSetDealyIntoPlugin() {
         // Given
         int delay = 1234;
@@ -578,7 +579,7 @@ class HostProcessUnitTest {
         assertThat(hostProcess.getPluginStats(pluginId).isSkipped(), is(equalTo(true)));
         assertThat(
                 hostProcess.getPluginStats(pluginId).getSkippedReason(),
-                is(equalTo("scanner does not target selected technologies")));
+                is(equalTo("scan rule does not target selected technologies")));
         assertThat(hostProcess.getPluginStats(pluginId).getMessageCount(), is(equalTo(0)));
         assertThat(hostProcess.getTestTotalCount(), is(equalTo(1)));
     }

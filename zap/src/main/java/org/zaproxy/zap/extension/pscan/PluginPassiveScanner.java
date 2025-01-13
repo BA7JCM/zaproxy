@@ -46,7 +46,7 @@ public abstract class PluginPassiveScanner extends Enableable
      * The (base) configuration key used to saved the configurations of a passive scanner, ID, alert
      * threshold and enabled state.
      */
-    private static final String PSCANS_KEY = PassiveScanParam.PASSIVE_SCANS_BASE_KEY + ".pscanner";
+    private static final String PSCANS_KEY = "pscans.pscanner";
 
     /** The configuration key used to save/load the ID of a passive scanner. */
     private static final String ID_KEY = "id";
@@ -72,8 +72,11 @@ public abstract class PluginPassiveScanner extends Enableable
 
     private static final Integer[] DEFAULT_HISTORY_TYPES =
             new Integer[] {
-                HistoryReference.TYPE_PROXIED, HistoryReference.TYPE_ZAP_USER,
-                HistoryReference.TYPE_SPIDER, HistoryReference.TYPE_SPIDER_AJAX
+                HistoryReference.TYPE_PROXIED,
+                HistoryReference.TYPE_ZAP_USER,
+                HistoryReference.TYPE_SPIDER,
+                HistoryReference.TYPE_SPIDER_AJAX,
+                HistoryReference.TYPE_CLIENT_SPIDER
             };
 
     private static final Set<Integer> DEFAULT_HISTORY_TYPES_SET =
@@ -84,35 +87,14 @@ public abstract class PluginPassiveScanner extends Enableable
     private Configuration config = null;
     private AddOn.Status status = AddOn.Status.unknown;
 
-    private HttpMessage message;
     private PassiveScanData passiveScanData;
 
     public PluginPassiveScanner() {
         super(true);
     }
 
-    @SuppressWarnings("deprecation")
-    void init(PassiveScanThread parent, HttpMessage message, PassiveScanData psd) {
-        this.message = message;
-        this.passiveScanData = psd;
-
-        setParent(parent);
-    }
-
-    /**
-     * <strong>Note:</strong> This method should no longer need to be overridden, the functionality
-     * provided by the {@code parent} can be obtained directly with {@link #newAlert()} and {@link
-     * #addHistoryTag(String)}.
-     */
-    @Override
-    @SuppressWarnings("deprecation")
-    public void setParent(PassiveScanThread parent) {
-        // Nothing to do.
-    }
-
-    void clean() {
-        message = null;
-        passiveScanData = null;
+    public void setHelper(PassiveScanData passiveScanData) {
+        this.passiveScanData = passiveScanData;
     }
 
     /**
@@ -221,7 +203,9 @@ public abstract class PluginPassiveScanner extends Enableable
         }
     }
 
-    /** @deprecated (2.7.0) Replaced by {@link #getAlertThreshold()}. */
+    /**
+     * @deprecated (2.7.0) Replaced by {@link #getAlertThreshold()}.
+     */
     @Override
     @Deprecated
     public AlertThreshold getLevel() {
@@ -394,16 +378,12 @@ public abstract class PluginPassiveScanner extends Enableable
         return passiveScanData;
     }
 
-    private PassiveScanTaskHelper taskHelper;
+    private PassiveScanActions actions;
 
+    /** <strong>Note:</strong> Not part of the public API. */
     @Override
-    public void setTaskHelper(PassiveScanTaskHelper helper) {
-        this.taskHelper = helper;
-    }
-
-    @Override
-    public PassiveScanTaskHelper getTaskHelper() {
-        return this.taskHelper;
+    public void setPassiveScanActions(PassiveScanActions actions) {
+        this.actions = actions;
     }
 
     /**
@@ -425,7 +405,7 @@ public abstract class PluginPassiveScanner extends Enableable
      * @since 2.12.0
      */
     protected void addHistoryTag(String tag) {
-        this.taskHelper.addHistoryTag(this.message.getHistoryRef(), tag);
+        this.actions.addHistoryTag(passiveScanData.getMessage().getHistoryRef(), tag);
     }
 
     /**
@@ -464,8 +444,12 @@ public abstract class PluginPassiveScanner extends Enableable
      * @since 2.12.0
      */
     public PluginPassiveScanner copy()
-            throws InstantiationException, IllegalAccessException, IllegalArgumentException,
-                    InvocationTargetException, NoSuchMethodException, SecurityException {
+            throws InstantiationException,
+                    IllegalAccessException,
+                    IllegalArgumentException,
+                    InvocationTargetException,
+                    NoSuchMethodException,
+                    SecurityException {
         PluginPassiveScanner pps = this.getClass().getConstructor().newInstance();
         Configuration conf = this.getConfig();
         if (conf == null) {
@@ -497,7 +481,7 @@ public abstract class PluginPassiveScanner extends Enableable
      * @since 2.9.0
      */
     protected AlertBuilder newAlert() {
-        return new AlertBuilder(this, message);
+        return new AlertBuilder(this, passiveScanData.getMessage());
     }
 
     /**
@@ -601,6 +585,12 @@ public abstract class PluginPassiveScanner extends Enableable
         }
 
         @Override
+        public AlertBuilder setInputVector(String inputVector) {
+            super.setInputVector(inputVector);
+            return this;
+        }
+
+        @Override
         public AlertBuilder setCweId(int cweId) {
             super.setCweId(cweId);
             return this;
@@ -674,7 +664,7 @@ public abstract class PluginPassiveScanner extends Enableable
 
         /** Raises the alert with specified data. */
         public void raise() {
-            plugin.taskHelper.raiseAlert(message.getHistoryRef(), build());
+            plugin.actions.raiseAlert(message.getHistoryRef(), build());
             Stats.incCounter("stats.pscan." + plugin.getPluginId() + ".alerts");
         }
     }

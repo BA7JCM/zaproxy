@@ -52,10 +52,10 @@ public abstract class PopupMenuItemHttpMessageContainer
 
     private static final long serialVersionUID = -4769111731197641466L;
 
-    private static final Logger logger =
+    private static final Logger LOGGER =
             LogManager.getLogger(PopupMenuItemHttpMessageContainer.class);
 
-    /** The invokers of the the pop up menu. */
+    /** The invokers of the pop up menu. */
     protected static enum Invoker {
         SITES_PANEL,
         HISTORY_PANEL,
@@ -544,7 +544,7 @@ public abstract class PopupMenuItemHttpMessageContainer
     }
 
     /**
-     * Performs the actions on the the given message container.
+     * Performs the actions on the given message container.
      *
      * <p>Defaults to call the method {@code performActions(List)} with the selected messages
      * obtained by calling the method {@code getSelectedMessages(HttpMessageContainer)}, with the
@@ -562,7 +562,7 @@ public abstract class PopupMenuItemHttpMessageContainer
     }
 
     /**
-     * Performs the actions on all the the given messages.
+     * Performs the actions on all the given messages.
      *
      * <p>Defaults to call the method {@code performAction(HttpMessage)} for each message (with the
      * message as parameter).
@@ -593,7 +593,7 @@ public abstract class PopupMenuItemHttpMessageContainer
 
         @Override
         public void actionPerformed(ActionEvent evt) {
-            logger.debug(
+            LOGGER.debug(
                     "actionPerformed {} {}",
                     invoker != null ? invoker.name() : "null invoker",
                     evt.getActionCommand());
@@ -601,7 +601,7 @@ public abstract class PopupMenuItemHttpMessageContainer
             try {
                 performActions(httpMessageContainer);
             } catch (Exception e) {
-                logger.error(e.getMessage(), e);
+                LOGGER.error(e.getMessage(), e);
             }
 
             resetState();

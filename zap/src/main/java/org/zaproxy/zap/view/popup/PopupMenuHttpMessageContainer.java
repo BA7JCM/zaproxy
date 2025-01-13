@@ -45,7 +45,7 @@ public class PopupMenuHttpMessageContainer extends ExtensionPopupMenuMessageCont
 
     private static final long serialVersionUID = -5266647403287261225L;
 
-    /** The invokers of the the pop up menu. */
+    /** The invokers of the pop up menu. */
     protected static enum Invoker {
         SITES_PANEL,
         HISTORY_PANEL,
@@ -234,7 +234,7 @@ public class PopupMenuHttpMessageContainer extends ExtensionPopupMenuMessageCont
      * be disabled if in {@code Mode.Safe} or if in {@code Mode.Protected} and not all the selected
      * messages are in scope.
      *
-     * <h3>Notifying and processing child menus</h3>
+     * <p>Notifying and processing child menus
      *
      * <p>When the method {@code isProcessExtensionPopupChildren()} returns true, the method {@code
      * isEnableForComponent(Component)} is called on all child {@code ExtensionPopupMenuComponent}s.
